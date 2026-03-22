@@ -1,0 +1,55 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class PlayerController : MonoBehaviour
+{
+    public float moveSpeed = 5f;
+    public Transform firePoint;
+    public GameObject bulletPrefab;
+    bool paused;
+
+    Rigidbody2D rb;
+    PlayerInput input;
+    Vector2 move;
+    Vector2 aim;
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        input = GetComponent<PlayerInput>();
+    }
+
+    void Update()
+    {
+        move = input.actions["Move"].ReadValue<Vector2>();
+
+        Vector2 rawAim = input.actions["Aim"].ReadValue<Vector2>();
+
+        if (Gamepad.current != null && Gamepad.current.rightStick.ReadValue().sqrMagnitude > 0.1f)
+            aim = rawAim;
+        else
+            aim = (Vector2)Camera.main.ScreenToWorldPoint(rawAim) - (Vector2)firePoint.position;
+
+        if (aim.sqrMagnitude > 0.01f)
+            firePoint.right = aim.normalized;
+
+        if (input.actions["Shoot"].WasPressedThisFrame())
+            Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
+
+        if (input.actions["Pause"].WasPressedThisFrame())
+        {
+            TogglePause();
+        }
+    }
+
+    void TogglePause()
+    {
+        paused = !paused;
+        Time.timeScale = paused ? 0f : 1f;
+    }
+
+    void FixedUpdate()
+    {
+        rb.linearVelocity = move * moveSpeed;
+    }
+}
